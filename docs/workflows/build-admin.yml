@@ -1,0 +1,78 @@
+# Build SpaceFy Admin Dashboard (apps/admin, Nx webpack).
+#
+# What this does: installs dependencies with Yarn 1 (yarn.lock v1) and
+# runs the upstream script `yarn build:admin`, which is
+# `nx build admin --prod --baseHref=/developers/`. The output is
+# dist/apps/admin and it is uploaded as an artifact.
+#
+# What this does NOT do: deploy to a server. There is no deploy target
+# configured for this fork yet, so the result is a build artifact that
+# can be downloaded and served from any static host under /developers/.
+#
+# Notes:
+# - Runs on ubuntu-latest, not on Mezon's self-hosted runners
+#   (mezon-build-linux), which this fork does not have.
+# - The admin webpack config reads NX_* variables from apps/admin/.env
+#   when that file exists. That file is already committed in this repo,
+#   so no secrets need to be set for the build itself. Do not paste
+#   real secret values into this workflow file.
+# - The production fileReplacements in apps/admin/project.json refer
+#   to environments files that are not imported by any admin code,
+#   so they do not affect this build.
+
+name: Build SpaceFy Admin Dashboard
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/admin/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/build-admin.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/admin/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/build-admin.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.5.0'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build admin dashboard
+        run: yarn build:admin
+
+      - name: Verify build output
+        run: test -f dist/apps/admin/index.html
+
+      - name: Upload admin dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: spacefy-admin-dashboard
+          path: dist/apps/admin
+          if-no-files-found: error
