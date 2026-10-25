@@ -57,7 +57,7 @@ const Header = ({ toggleSideBar, isShowSideBar }: IHeaderProps) => {
 						width={28}
 						height={28}
 					/>
-					<span className="mt-1 text-[15px] font-semibold dark:text-textPrimary text-colorTextLightMode">MEZON DEVELOPERS</span>
+					<span className="mt-1 text-[15px] font-semibold dark:text-textPrimary text-colorTextLightMode">SPACEFY DEVELOPERS</span>
 				</Link>
 			</div>
 			<div className="flex flex-row items-center justify-center relative">

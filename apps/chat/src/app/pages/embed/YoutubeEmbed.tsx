@@ -34,7 +34,7 @@ export default function YoutubeEmbed() {
 	}, [searchParams]);
 
 	useEffect(() => {
-		document.title = 'Mezon';
+		document.title = 'SpaceFy';
 	}, []);
 
 	if (!videoId) {

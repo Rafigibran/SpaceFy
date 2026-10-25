@@ -793,10 +793,10 @@ const ModalQR = ({ closeModalEdit, data }: { closeModalEdit: () => void; data: s
 										className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-theme-primary bg-item-theme-hover transition-colors text-left w-full cursor-pointer"
 									>
 										<div className="w-5 h-5 flex items-center justify-center shrink-0">
-											<img src={DEFAULT_LOGO} className="w-4 h-4 object-contain rounded" alt="Mezon Logo" />
+											<img src={DEFAULT_LOGO} className="w-4 h-4 object-contain rounded" alt="SpaceFy Logo" />
 										</div>
 										<span className="truncate">
-											{t('accountSetting:qrProfile.resetDefaultLogo', { defaultValue: 'Reset to Mezon logo' })}
+											{t('accountSetting:qrProfile.resetDefaultLogo', { defaultValue: 'Reset to SpaceFy logo' })}
 										</span>
 									</button>
 								)}
@@ -855,8 +855,8 @@ const ModalQR = ({ closeModalEdit, data }: { closeModalEdit: () => void; data: s
 					>
 						<div className="flex items-center justify-between w-full pb-2 border-b border-slate-100 mb-2 px-0.5">
 							<div className="flex items-center gap-1.5">
-								<img src={DEFAULT_LOGO} className="w-4 h-4 object-contain rounded-md" alt="Mezon Logo" />
-								<span className="font-extrabold text-xs tracking-wider text-slate-800">MEZON</span>
+								<img src={DEFAULT_LOGO} className="w-4 h-4 object-contain rounded-md" alt="SpaceFy Logo" />
+								<span className="font-extrabold text-xs tracking-wider text-slate-800">SPACEFY</span>
 							</div>
 							<span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
 								Clan Invite

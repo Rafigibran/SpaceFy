@@ -123,11 +123,11 @@ const HeaderInstall = memo(() => {
 		<div className="flex flex-row items-center justify-center gap-[4px] absolute top-5 left-5">
 			<img
 				src={isDarkMode ? 'assets/images/mezon-logo-black.svg' : 'assets/images/mezon-logo-white.svg'}
-				alt="LogoMezon"
+				alt="LogoSpaceFy"
 				width={36}
 				height={36}
 			/>
-			<span className="text-2xl font-bold dark:text-[#dcdcdc] text-colorTextLightMode">MEZON</span>
+			<span className="text-2xl font-bold dark:text-[#dcdcdc] text-colorTextLightMode">SPACEFY</span>
 		</div>
 	);
 });

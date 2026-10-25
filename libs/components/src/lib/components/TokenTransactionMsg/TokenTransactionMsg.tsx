@@ -44,7 +44,7 @@ const TokenTransactionMessage = ({ message }: ITokenTransactionMessageProps) => 
 						className="cursor-pointer dark:text-blue-500 text-blue-600 font-semibold text-[15px]"
 						data-e2e={generateE2eId('send_token.message.button.open_history')}
 					>
-						Mezon transfer
+						SpaceFy transfer
 					</div>
 				</div>
 			</div>

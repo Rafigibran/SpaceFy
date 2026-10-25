@@ -18,13 +18,13 @@ export const SettingLanguage = ({ menuIsOpen }: ISettingLanguageProps) => {
 			{
 				title: t('setting:language.english'),
 				value: 'en',
-				contributedBy: 'Mezon Team',
+				contributedBy: 'SpaceFy Team',
 				flag: <USFlag />
 			},
 			{
 				title: t('setting:language.vietnamese'),
 				value: 'vi',
-				contributedBy: 'Mezon Team',
+				contributedBy: 'SpaceFy Team',
 				flag: <VietNamFlag />
 			},
 			{

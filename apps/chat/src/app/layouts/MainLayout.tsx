@@ -75,7 +75,7 @@ const GlobalEventListener = () => {
 		const notificationCount = notificationCountAllClan + totalUnreadMessages + quantityPendingRequest;
 		const displayCountBrowser = notificationCount > 99 ? '99+' : notificationCount.toString();
 
-		document.title = notificationCount > 0 ? `(${displayCountBrowser}) Mezon` : 'Mezon';
+		document.title = notificationCount > 0 ? `(${displayCountBrowser}) SpaceFy` : 'SpaceFy';
 	}, [allNotificationReplyMentionAllClan, totalUnreadMessages, quantityPendingRequest]);
 
 	useEffect(() => {

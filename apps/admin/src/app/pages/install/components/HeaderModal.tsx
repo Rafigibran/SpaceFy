@@ -12,7 +12,7 @@ const HeaderModal = memo(({ name, username }: HeaderModalProps) => {
 
 			<h3 className="font-extrabold text-lg sm:text-xl dark:text-amber-400 text-amber-500 mt-0.5 tracking-tight truncate max-w-full">{name}</h3>
 
-			<p className="text-xs font-medium dark:text-slate-300 text-slate-600 mt-0.5 leading-tight">wants to access your Mezon account</p>
+			<p className="text-xs font-medium dark:text-slate-300 text-slate-600 mt-0.5 leading-tight">wants to access your SpaceFy account</p>
 
 			<div className="mt-2.5 px-3 py-2 rounded-xl dark:bg-[#161826]/60 bg-slate-50/80 border dark:border-white/[0.04] border-slate-100 flex items-center justify-between text-xs font-medium shadow-inner">
 				<span className="dark:text-slate-400 text-slate-500 truncate max-w-[75%]">

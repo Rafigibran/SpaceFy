@@ -1,8 +1,8 @@
 {
 	"id": "/chat/",
-	"name": "Mezon's World",
-	"short_name": "Mezon",
-	"description": "Join Mezon to play games, chill with friends, and build your community.",
+	"name": "SpaceFy's World",
+	"short_name": "SpaceFy",
+	"description": "Join SpaceFy to play games, chill with friends, and build your community.",
 	"start_url": "/chat/",
 	"scope": "/chat/",
 	"display": "standalone",
