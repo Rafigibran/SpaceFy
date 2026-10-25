@@ -64,15 +64,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build admin dashboard
-        run: yarn build:admin
-
       - name: Verify build output
         run: test -f dist/apps/admin/index.html
 
       - name: Upload admin dashboard
         uses: actions/upload-artifact@v4
-        with:
-          name: spacefy-admin-dashboard
-          path: dist/apps/admin
-          if-no-files-found: error
