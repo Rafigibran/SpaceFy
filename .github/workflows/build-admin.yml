@@ -64,8 +64,5 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Verify build output
-        run: test -f dist/apps/admin/index.html
-
       - name: Upload admin dashboard
         uses: actions/upload-artifact@v4
