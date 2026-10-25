@@ -29,7 +29,6 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/admin/**'
       - 'libs/**'
       - 'package.json'
       - 'yarn.lock'
@@ -39,7 +38,6 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'apps/admin/**'
       - 'libs/**'
       - 'package.json'
       - 'yarn.lock'
