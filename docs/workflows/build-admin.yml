@@ -1,56 +1,50 @@
-# Build SpaceFy Admin Dashboard (apps/admin, Nx webpack).
+# Prepare SpaceFy Admin for Termux (NO direct build in this workflow).
 #
-# What this does: installs dependencies with Yarn 1 (yarn.lock v1) and
-# runs the upstream script `yarn build:admin`, which is
-# `nx build admin --prod --baseHref=/developers/`. The output is
-# dist/apps/admin and it is uploaded as an artifact.
+# Purpose: Rafi wants the raw admin source plus already installed Yarn
+# packages as a download, so he only has to run it in Termux. This
+# workflow therefore does NOT run `yarn build:admin`. It installs
+# dependencies once on the runner, packs the source together with
+# node_modules into one tarball, and uploads that tarball as an
+# artifact. Download the artifact, extract it in Termux, and run it.
 #
-# What this does NOT do: deploy to a server. There is no deploy target
-# configured for this fork yet, so the result is a build artifact that
-# can be downloaded and served from any static host under /developers/.
+# What is inside the tarball:
+# - apps/admin (the admin dashboard source, including its committed
+#   apps/admin/.env, so no secrets need to be set for a local run)
+# - libs (shared code the admin app imports)
+# - node_modules (Yarn packages already installed on the runner)
+# - package.json, yarn.lock, nx.json, tsconfig.base.json,
+#   jest.config.ts, jest.preset.js, .npmrc (workspace files Nx needs)
+# - TERMUX_README.txt (how to run it in Termux)
 #
-# Notes:
-# - Runs on ubuntu-latest, not on Mezon's self-hosted runners
-#   (mezon-build-linux), which this fork does not have.
-# - The admin webpack config reads NX_* variables from apps/admin/.env
-#   when that file exists. That file is already committed in this repo,
-#   so no secrets need to be set for the build itself. Do not paste
-#   real secret values into this workflow file.
-# - The production fileReplacements in apps/admin/project.json refer
-#   to environments files that are not imported by any admin code,
-#   so they do not affect this build.
+# What is NOT inside: no built dist output, no .git history.
+#
+# Run it manually only (Actions, Prepare SpaceFy Admin for Termux,
+# Run workflow). It does not run on every push, because the tarball
+# is large and is only needed when Rafi wants a fresh download.
+# The artifact is kept for 14 days, then it expires and the workflow
+# has to be run again for a fresh download.
+#
+# Platform caveat, read this before running in Termux: node_modules
+# in this package was installed on an ubuntu x86_64 runner, so its
+# native binaries (for example Nx and esbuild) are built for that
+# platform. Termux on a phone is Android arm64 with a different
+# libc, so if Termux reports a native binary error, run
+# `yarn install` once inside the extracted folder in Termux. That
+# only replaces the platform binaries, the source is already there.
+# If it runs without that error, do not run yarn install again.
 
-name: Build SpaceFy Admin Dashboard
+name: Prepare SpaceFy Admin for Termux
 
 permissions:
   contents: read
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/admin/**'
-      - 'libs/**'
-      - 'package.json'
-      - 'yarn.lock'
-      - 'nx.json'
-      - 'tsconfig.base.json'
-      - '.github/workflows/build-admin.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'apps/admin/**'
-      - 'libs/**'
-      - 'package.json'
-      - 'yarn.lock'
-      - 'nx.json'
-      - 'tsconfig.base.json'
-      - '.github/workflows/build-admin.yml'
   workflow_dispatch:
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,18 +55,62 @@ jobs:
           node-version: '24.5.0'
           cache: 'yarn'
 
-      - name: Install dependencies
+      - name: Install Yarn packages
         run: yarn install --frozen-lockfile
 
-      - name: Build admin dashboard
-        run: yarn build:admin
+      - name: Write Termux guide
+        run: |
+          cat > TERMUX_README.txt <<'TERMUX_EOF'
+          SPACEFY ADMIN UNTUK TERMUX
+          ==========================
+          Paket ini berisi mentahan admin dashboard SpaceFy
+          (apps/admin) beserta libs yang dipakainya dan node_modules
+          yang sudah terinstall. Kamu tidak perlu build di GitHub
+          Actions, cukup jalankan di Termux.
 
-      - name: Verify build output
-        run: test -f dist/apps/admin/index.html
+          LANGKAH DI TERMUX
+          ------------------
+          1. Siapkan folder kosong, lalu ekstrak paket ini di dalamnya:
+             mkdir -p spacefy-admin
+             cd spacefy-admin
+             tar -xzf spacefy-admin-termux.tar.gz
 
-      - name: Upload admin dashboard
+          2. Pastikan Node.js dan Yarn terpasang di Termux:
+             pkg update
+             pkg install nodejs yarn
+             Kalau yarn tidak ada di pkg, pakai:
+             npm install -g yarn
+
+          3. Jalankan admin dashboard (tanpa yarn install dulu):
+             yarn dev:admin
+
+          4. Buka di browser HP:
+             http://127.0.0.1:4200/
+
+          CATATAN
+          -------
+          - File apps/admin/.env sudah ikut di dalam paket, jadi
+            tidak perlu isi secret apa pun untuk jalan lokal.
+          - Jangan jalankan yarn install dulu. Jalankan hanya kalau
+            Termux mengeluh soal binary native (misalnya nx atau
+            esbuild tidak bisa jalan), karena node_modules di paket
+            ini dibuat di runner ubuntu x86_64, sedangkan HP
+            Android arm64. Sekali yarn install di Termux cukup
+            untuk mengganti binary platform itu.
+          - Jangan commit node_modules ke repo.
+          TERMUX_EOF
+
+      - name: Create Termux package
+        run: |
+          tar --exclude='node_modules/.cache' --exclude='dist' --exclude='coverage' -czf spacefy-admin-termux.tar.gz apps/admin libs node_modules package.json yarn.lock nx.json tsconfig.base.json jest.config.ts jest.preset.js .npmrc TERMUX_README.txt
+          ls -lh spacefy-admin-termux.tar.gz
+          du -sh spacefy-admin-termux.tar.gz
+
+      - name: Upload Termux package
         uses: actions/upload-artifact@v4
         with:
-          name: spacefy-admin-dashboard
-          path: dist/apps/admin
+          name: spacefy-admin-termux
+          path: spacefy-admin-termux.tar.gz
+          retention-days: 14
+          compression-level: 0
           if-no-files-found: error
