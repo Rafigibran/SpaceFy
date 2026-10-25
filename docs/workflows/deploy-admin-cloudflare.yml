@@ -1,0 +1,121 @@
+# Deploy SpaceFy Admin to Cloudflare Pages (free, static hosting).
+#
+# Why this workflow restructures the build output: the admin app is
+# built with baseHref /developers/ and its routes all live under
+# /developers (see apps/admin/src/app/routes/index.tsx, path
+# '/developers', children dashboard, applications, teams, and so on).
+# The upstream build output is dist/apps/admin. Deploying that
+# folder as the site root would break asset URLs, because index.html
+# asks for /developers/*.js files that would not exist at the root.
+# So this workflow keeps the upstream build unchanged and repacks it:
+# - pages-deploy/developers/ gets the full dist/apps/admin output,
+#   so /developers/ and its assets resolve exactly as upstream
+#   intended.
+# - pages-deploy/index.html is a copy of the admin index.html, so
+#   Cloudflare Pages' SPA fallback (it serves the root index.html
+#   for paths that are not static files, when no top-level 404.html
+#   exists) can serve the admin app for deep links like
+#   /developers/dashboard.
+# - pages-deploy/_redirects sends the site root / to /developers/
+#   with a 302, so opening the bare pages.dev URL lands on the admin.
+# Final URL: https://spacefy-admin.pages.dev/developers/
+#
+# Build happens on the GitHub runner (Node 24.5.0, Yarn 1, frozen
+# lockfile), so Cloudflare only serves static files. There is no
+# Cloudflare build timeout or Node version problem on their side.
+#
+# Required GitHub Secrets (Settings, Secrets and variables, Actions):
+# - CLOUDFLARE_API_TOKEN: an API token with Account, Cloudflare
+#   Pages, Edit permission. Create it at dash.cloudflare.com, My
+#   Profile, API Tokens, Create Token, Custom token.
+# - CLOUDFLARE_ACCOUNT_ID: shown on the Cloudflare dashboard
+#   overview page, in the right sidebar.
+# Never commit either value to the repo.
+#
+# The workflow also tries to create the Pages project
+# "spacefy-admin" if it does not exist yet. If that step fails on
+# permissions, create the project manually in Cloudflare (Workers
+# and Pages, Create, Pages, name spacefy-admin) and run the workflow
+# again. The first successful deploy creates the URL above.
+#
+# Note on the backend: apps/admin/.env is already committed in this
+# repo, so the deployed admin still talks to the backend configured
+# there (Mezon's backend by default). A SpaceFy backend does not
+# exist yet, so hosting alone does not change which API it calls.
+
+name: Deploy SpaceFy Admin to Cloudflare Pages
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/admin/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/deploy-admin-cloudflare.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/admin/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/deploy-admin-cloudflare.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.5.0'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build admin dashboard
+        run: yarn build:admin
+
+      - name: Verify build output
+        run: test -f dist/apps/admin/index.html
+
+      - name: Prepare Cloudflare Pages directory
+        run: |
+          mkdir -p pages-deploy/developers
+          cp -r dist/apps/admin/. pages-deploy/developers/
+          cp dist/apps/admin/index.html pages-deploy/index.html
+          printf '/ /developers/ 302\n' > pages-deploy/_redirects
+          ls -lh pages-deploy pages-deploy/developers | head -40
+
+      - name: Check Cloudflare secrets
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "Missing secret CLOUDFLARE_API_TOKEN. Set it in this repo's Settings, Secrets and variables, Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "Missing secret CLOUDFLARE_ACCOUNT_ID. Set it in this repo's Settings, Secrets and variables, Actions."
+            exit 1
+          fi
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx -y wrangler pages project create spacefy-admin --production-branch=main || true
+          npx -y wrangler pages deploy pages-deploy --project-name=spacefy-admin --commit-dirty=true --branch=main
