@@ -1,0 +1,105 @@
+# Build SpaceFy APK from the Mezon Android client (upstream source).
+#
+# Why the Android source is checked out separately: this repository
+# (Rafigibran/SpaceFy) is the Mezon web monorepo (chat, admin,
+# discover). It contains no Android source, no AndroidManifest, and
+# no Gradle project, so no workflow in this repo alone can produce
+# an APK. The native Android client lives in mezonai/mezon-android,
+# and this workflow builds it from a pinned upstream commit.
+#
+# Required GitHub Secrets (set in this repo's Settings, never commit
+# them here):
+# - MEZON_SECRETS_PROPERTIES: the full content of the Android
+#   client's mezon.secrets.properties file. The upstream build fails
+#   early without it, and every key in
+#   mezon.secrets.properties.example is required. Get values from
+#   your own backend or team secret store, not from upstream.
+# - GOOGLE_SERVICES_JSON: the full content of google-services.json
+#   for the Firebase project used by the app.
+#
+# Deliberately NOT done here: renaming the package to
+# com.rafdev.spacefy. The upstream applicationId is com.mezon.mobile
+# and 193 source files import com.mezon.mobile.R, so changing only
+# applicationId/namespace in build.gradle.kts would break the build.
+# A package rename is a full Android-client rebrand (move the
+# com/mezon/mobile source tree, update every import and manifest
+# reference), and it belongs in a fork of mezon-android, not in a
+# sed step in this workflow. Until that rebrand is done, the APK
+# produced here installs as com.mezon.mobile.
+#
+# The APK also still talks to whatever backend is configured in
+# MEZON_SECRETS_PROPERTIES. A SpaceFy backend does not exist yet,
+# so with Mezon's values it talks to Mezon's backend.
+#
+# This workflow only runs when this file changes or when it is
+# started manually, because its source lives upstream, not in this
+# repo. Pushing web changes to this repo must not trigger an APK
+# build. The APK is debug-signed only and is not for Play Store.
+
+name: Build SpaceFy APK
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-apk.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Mezon Android (pinned upstream commit)
+        uses: actions/checkout@v4
+        with:
+          repository: mezonai/mezon-android
+          ref: dfc3d86a9f2344f70cf4ff5ba5decf5d70e4e2ac
+          submodules: recursive
+          path: android
+
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.MEZON_SECRETS_PROPERTIES }}" ]; then
+            echo "Missing secret MEZON_SECRETS_PROPERTIES. Set it in this repo's Settings, Secrets and variables, Actions, using the full mezon.secrets.properties content."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+            echo "Missing secret GOOGLE_SERVICES_JSON. Set it in this repo's Settings, Secrets and variables, Actions, using the full google-services.json content."
+            exit 1
+          fi
+
+      - name: Write secrets files (runner workspace only, never committed)
+        run: |
+          printf '%s' "${{ secrets.MEZON_SECRETS_PROPERTIES }}" > android/mezon.secrets.properties
+          printf '%s' "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK, CMake and platform 36
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.1.13356709" "cmake;3.22.1" "platforms;android-36"
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: spacefy-apk-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
